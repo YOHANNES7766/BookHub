@@ -1,31 +1,29 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:logging/logging.dart';
 
 class AuthService {
-  // For Android emulator, we use 10.0.2.2 to access host machine's localhost
   final String baseUrl = 'http://10.0.2.2:8000/api';
-  static const timeout = Duration(seconds: 10); // Increased timeout
+  static const timeout = Duration(seconds: 10);
+  final Logger _logger = Logger('AuthService');
 
-  // Get stored token
+  // Token management
   Future<String?> _getToken() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getString('auth_token');
   }
 
-  // Set stored token
   Future<void> _setToken(String token) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('auth_token', token);
   }
 
-  // Remove stored token
   Future<void> _removeToken() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove('auth_token');
   }
 
-  // Get auth headers
   Future<Map<String, String>> _getAuthHeaders() async {
     final token = await _getToken();
     return {
@@ -35,7 +33,6 @@ class AuthService {
     };
   }
 
-  // Handle API response
   Map<String, dynamic>? _handleResponse(http.Response response) {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final data = jsonDecode(response.body);
@@ -46,7 +43,6 @@ class AuthService {
     return null;
   }
 
-  // Handle validation errors
   Map<String, dynamic>? _handleValidationError(http.Response response) {
     if (response.statusCode == 422) {
       final data = jsonDecode(response.body);
@@ -54,41 +50,34 @@ class AuthService {
         return {
           'status': 'error',
           'errors': data['errors'],
-          'message': data['message'] ?? 'Validation failed'
+          'message': data['message'] ?? 'Validation failed',
         };
       }
     }
     return null;
   }
 
-  // Test API connection
   Future<bool> testConnection() async {
     try {
-      print('Testing connection to: $baseUrl');
-      // Use GET request to test if the API is accessible
+      _logger.info('Testing connection to: $baseUrl');
       final response = await http.get(
         Uri.parse('$baseUrl/login'),
-        headers: {
-          "Accept": "application/json",
-        },
+        headers: {'Accept': 'application/json'},
       ).timeout(timeout);
 
-      print('Connection test status: ${response.statusCode}');
-      print('Connection test response: ${response.body}');
+      _logger.info('Connection status: ${response.statusCode}');
+      _logger.fine('Connection body: ${response.body}');
 
-      // Consider it successful if we get any response (even 405 Method Not Allowed)
-      // as this means the server is reachable
       return response.statusCode != 404;
     } catch (e) {
-      print('Connection test error: $e');
+      _logger.severe('Connection test failed: $e');
       return false;
     }
   }
 
   Future<Map<String, dynamic>?> login(String email, String password) async {
     try {
-      print('Attempting login with email: $email');
-      print('Using API URL: $baseUrl/login');
+      _logger.info('Attempting login with email: $email');
 
       final response = await http
           .post(
@@ -97,15 +86,12 @@ class AuthService {
               "Content-Type": "application/json",
               "Accept": "application/json",
             },
-            body: jsonEncode({
-              'email': email,
-              'password': password,
-            }),
+            body: jsonEncode({'email': email, 'password': password}),
           )
           .timeout(timeout);
 
-      print('Login response status code: ${response.statusCode}');
-      print('Login response body: ${response.body}');
+      _logger.info('Login status: ${response.statusCode}');
+      _logger.fine('Login body: ${response.body}');
 
       final data = _handleResponse(response);
       if (data != null && data['token'] != null) {
@@ -114,16 +100,11 @@ class AuthService {
       }
 
       final validationError = _handleValidationError(response);
-      if (validationError != null) {
-        return validationError;
-      }
+      if (validationError != null) return validationError;
 
       return null;
     } catch (e) {
-      print('Login error details: $e');
-      if (e is http.ClientException) {
-        print('Connection error: ${e.message}');
-      }
+      _logger.severe('Login error: $e');
       return null;
     }
   }
@@ -131,8 +112,7 @@ class AuthService {
   Future<Map<String, dynamic>?> register(
       String name, String email, String password) async {
     try {
-      print('Attempting registration with email: $email');
-      print('API URL: $baseUrl/register');
+      _logger.info('Registering user with email: $email');
 
       final response = await http
           .post(
@@ -145,13 +125,13 @@ class AuthService {
               'name': name,
               'email': email,
               'password': password,
-              'password_confirmation': password, // Added password confirmation
+              'password_confirmation': password,
             }),
           )
           .timeout(timeout);
 
-      print('Register response status code: ${response.statusCode}');
-      print('Register response body: ${response.body}');
+      _logger.info('Register status: ${response.statusCode}');
+      _logger.fine('Register body: ${response.body}');
 
       final data = _handleResponse(response);
       if (data != null && data['token'] != null) {
@@ -160,16 +140,11 @@ class AuthService {
       }
 
       final validationError = _handleValidationError(response);
-      if (validationError != null) {
-        return validationError;
-      }
+      if (validationError != null) return validationError;
 
       return null;
     } catch (e) {
-      print('Register error details: $e');
-      if (e is http.ClientException) {
-        print('Connection error: ${e.message}');
-      }
+      _logger.severe('Registration error: $e');
       return null;
     }
   }
@@ -183,7 +158,7 @@ class AuthService {
           )
           .timeout(timeout);
 
-      print('Get user response: ${response.body}');
+      _logger.fine('Get user body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -196,7 +171,7 @@ class AuthService {
       }
       return null;
     } catch (e) {
-      print('Get user error: $e');
+      _logger.severe('Get user error: $e');
       return null;
     }
   }
@@ -217,7 +192,7 @@ class AuthService {
       }
       return false;
     } catch (e) {
-      print('Logout error: $e');
+      _logger.severe('Logout error: $e');
       return false;
     }
   }
@@ -238,6 +213,7 @@ class AuthService {
       }
       return null;
     } catch (e) {
+      _logger.severe('Refresh token error: $e');
       return null;
     }
   }
@@ -251,18 +227,18 @@ class AuthService {
           )
           .timeout(timeout);
 
-      print('Send verification email response: ${response.body}');
+      _logger.fine('Verification email body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return {
           'status': 'success',
-          'message': data['message'] ?? 'Verification email sent successfully'
+          'message': data['message'] ?? 'Verification email sent successfully',
         };
       }
       return null;
     } catch (e) {
-      print('Send verification email error: $e');
+      _logger.severe('Send verification email error: $e');
       return null;
     }
   }
@@ -276,18 +252,18 @@ class AuthService {
           )
           .timeout(timeout);
 
-      print('Verify email response: ${response.body}');
+      _logger.fine('Verify email response: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return {
           'status': 'success',
-          'message': data['message'] ?? 'Email verified successfully'
+          'message': data['message'] ?? 'Email verified successfully',
         };
       }
       return null;
     } catch (e) {
-      print('Verify email error: $e');
+      _logger.severe('Verify email error: $e');
       return null;
     }
   }
