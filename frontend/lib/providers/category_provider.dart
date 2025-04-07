@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart'; // ✅ Added logger
 import '../models/category_model.dart';
 import '../services/category_service.dart';
+
+final logger = Logger(); // ✅ Initialize logger
 
 class CategoryProvider with ChangeNotifier {
   List<Category> _categories = [];
   bool _isLoading = false;
-  String? _errorMessage; // ✅ Added error handling
+  String? _errorMessage;
 
   List<Category> get categories => _categories;
   bool get isLoading => _isLoading;
-  String? get errorMessage => _errorMessage; // ✅ Expose error messages
+  String? get errorMessage => _errorMessage;
 
   // Fetch categories from API
   Future<void> fetchCategories() async {
@@ -21,7 +24,7 @@ class CategoryProvider with ChangeNotifier {
       _categories = await CategoryService.getCategories();
     } catch (e) {
       _errorMessage = 'Error fetching categories';
-      print('Error fetching categories: $e');
+      logger.e('Error fetching categories', error: e); // ✅ Replaced print
     }
 
     _isLoading = false;
@@ -36,7 +39,7 @@ class CategoryProvider with ChangeNotifier {
       notifyListeners();
     } catch (e) {
       _errorMessage = 'Error adding category';
-      print('Error adding category: $e');
+      logger.e('Error adding category', error: e); // ✅ Replaced print
     }
   }
 
@@ -48,7 +51,7 @@ class CategoryProvider with ChangeNotifier {
       notifyListeners();
     } catch (e) {
       _errorMessage = 'Error deleting category';
-      print('Error deleting category: $e');
+      logger.e('Error deleting category', error: e); // ✅ Replaced print
     }
   }
 }
