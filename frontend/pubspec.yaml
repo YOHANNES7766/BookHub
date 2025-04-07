@@ -42,6 +42,7 @@ dependencies:
   path: ^1.8.3
   http_parser: ^4.1.2
   permission_handler: ^11.4.0
+  logger: ^2.5.0
 
 dev_dependencies:
   flutter_test:
