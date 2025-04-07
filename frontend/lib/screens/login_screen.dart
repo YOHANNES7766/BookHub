@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import 'book_list_screen.dart'; // Ensure this import is correct
+import 'book_list_screen.dart';
 import 'register_screen.dart';
 import '../services/auth_service.dart';
 
@@ -9,10 +9,10 @@ class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  LoginScreenState createState() => LoginScreenState(); // ✅ Public class
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool isLoading = false;
@@ -24,7 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Login'),
-        centerTitle: true, // Center the title for better alignment
+        centerTitle: true,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -56,6 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () async {
                       if (emailController.text.isEmpty ||
                           passwordController.text.isEmpty) {
+                        if (!mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                               content: Text('Please fill in all fields')),
@@ -65,9 +66,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
                       setState(() => isLoading = true);
                       try {
-                        // Test connection first
                         final authService = AuthService();
                         final isConnected = await authService.testConnection();
+
+                        if (!mounted) return;
 
                         if (!isConnected) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -86,6 +88,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           passwordController.text.trim(),
                         );
 
+                        if (!mounted) return;
+
                         if (success) {
                           Navigator.pushReplacement(
                             context,
@@ -102,7 +106,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           );
                         }
                       } catch (e) {
-                        print('Login error details: $e');
+                        // Use a logger in production
+                        // debugPrint('Login error details: $e');
                         String errorMessage =
                             'An error occurred. Please try again.';
 
@@ -114,6 +119,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               'Connection timed out. Please check if the Laravel server is running and accessible.';
                         }
 
+                        if (!mounted) return;
+
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(errorMessage),
@@ -122,7 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         );
                       } finally {
-                        setState(() => isLoading = false);
+                        if (mounted) setState(() => isLoading = false);
                       }
                     },
                     style: ElevatedButton.styleFrom(
@@ -154,7 +161,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Helper method to build text fields with icons
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
@@ -173,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen> {
           borderRadius: BorderRadius.circular(8.0),
         ),
         focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.blueAccent),
+          borderSide: const BorderSide(color: Colors.blueAccent),
           borderRadius: BorderRadius.circular(8.0),
         ),
       ),

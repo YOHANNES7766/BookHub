@@ -7,10 +7,11 @@ class CategoryScreen extends StatefulWidget {
   const CategoryScreen({super.key});
 
   @override
-  _CategoryScreenState createState() => _CategoryScreenState();
+  CategoryScreenState createState() => CategoryScreenState();
 }
 
-class _CategoryScreenState extends State<CategoryScreen> {
+// ✅ Made public to fix `library_private_types_in_public_api` warning
+class CategoryScreenState extends State<CategoryScreen> {
   @override
   void initState() {
     super.initState();
@@ -26,8 +27,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Categories'),
-        centerTitle: true, // Center the title for a better layout
-        elevation: 0, // Remove app bar shadow for a clean look
+        centerTitle: true,
+        elevation: 0,
       ),
       body: categoryProvider.isLoading
           ? _buildLoadingState()
@@ -49,22 +50,21 @@ class _CategoryScreenState extends State<CategoryScreen> {
     );
   }
 
-  // Show loading state with a spinner
   Widget _buildLoadingState() {
     return const Center(
       child: CircularProgressIndicator(),
     );
   }
 
-  // Show empty state when no categories exist
   Widget _buildEmptyState() {
     return const Center(
-      child: Text('No categories available',
-          style: TextStyle(fontSize: 18, color: Colors.grey)),
+      child: Text(
+        'No categories available',
+        style: TextStyle(fontSize: 18, color: Colors.grey),
+      ),
     );
   }
 
-  // Show error state with a more user-friendly design
   Widget _buildErrorState(String errorMessage) {
     return Center(
       child: Column(
@@ -72,8 +72,11 @@ class _CategoryScreenState extends State<CategoryScreen> {
         children: [
           const Icon(Icons.error, color: Colors.red, size: 50),
           const SizedBox(height: 10),
-          Text(errorMessage,
-              style: const TextStyle(fontSize: 16, color: Colors.red)),
+          Text(
+            errorMessage,
+            style: const TextStyle(fontSize: 16, color: Colors.red),
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 20),
           ElevatedButton(
             onPressed: () {
@@ -88,7 +91,6 @@ class _CategoryScreenState extends State<CategoryScreen> {
     );
   }
 
-  // Show category list with a delete action and better list design
   Widget _buildCategoryList(CategoryProvider categoryProvider) {
     return ListView.builder(
       itemCount: categoryProvider.categories.length,
@@ -107,8 +109,10 @@ class _CategoryScreenState extends State<CategoryScreen> {
               category.name,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            subtitle: Text(category.description ?? 'No description available',
-                style: const TextStyle(color: Colors.grey)),
+            subtitle: Text(
+              category.description ?? 'No description available',
+              style: const TextStyle(color: Colors.grey),
+            ),
             trailing: IconButton(
               icon: const Icon(Icons.delete, color: Colors.red),
               onPressed: () =>
@@ -120,9 +124,11 @@ class _CategoryScreenState extends State<CategoryScreen> {
     );
   }
 
-  // Confirm deletion before removing a category
   Future<void> _confirmDelete(
-      BuildContext context, CategoryProvider provider, int categoryId) async {
+    BuildContext context,
+    CategoryProvider provider,
+    int categoryId,
+  ) async {
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) {
@@ -136,9 +142,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop(true);
-              },
+              onPressed: () => Navigator.of(context).pop(true),
               child: const Text(
                 'Delete',
                 style: TextStyle(color: Colors.red),
@@ -151,8 +155,11 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
     if (shouldDelete == true) {
       await provider.deleteCategory(categoryId);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Category deleted')));
+      if (!mounted) return; // ✅ FIX: prevent using context after unmount
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Category deleted')),
+      );
     }
   }
 }
