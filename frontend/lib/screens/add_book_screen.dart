@@ -24,6 +24,7 @@ class AddBookScreenState extends State<AddBookScreen> {
   String? coverImageName;
   String? pdfFileName;
   String? selectedCategory;
+
   List<Map<String, String>> categories = [
     {'id': '1', 'name': 'Fiction'},
     {'id': '2', 'name': 'Non-Fiction'},
@@ -190,8 +191,71 @@ class AddBookScreenState extends State<AddBookScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // (Everything else remains unchanged - all UI widgets, buttons, etc.)
-              // ... keep your Cards, TextFormFields, and Submit Button here
+              TextFormField(
+                controller: titleController,
+                decoration: const InputDecoration(labelText: 'Title'),
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Please enter the title'
+                    : null,
+              ),
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: authorController,
+                decoration: const InputDecoration(labelText: 'Author'),
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Please enter the author'
+                    : null,
+              ),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<String>(
+                value: selectedCategory,
+                decoration: const InputDecoration(labelText: 'Category'),
+                items: categories.map((category) {
+                  return DropdownMenuItem<String>(
+                    value: category['id'],
+                    child: Text(category['name']!),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedCategory = value;
+                  });
+                },
+                validator: (value) =>
+                    value == null ? 'Please select a category' : null,
+              ),
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: descriptionController,
+                decoration:
+                    const InputDecoration(labelText: 'Description (Optional)'),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: pickCoverImage,
+                icon: const Icon(Icons.image),
+                label: Text(coverImageName ?? 'Pick Cover Image'),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton.icon(
+                onPressed: pickPdfFile,
+                icon: const Icon(Icons.picture_as_pdf),
+                label: Text(pdfFileName ?? 'Pick PDF File'),
+              ),
+              const SizedBox(height: 30),
+              Center(
+                child: ElevatedButton(
+                  onPressed: isLoading ? null : handleAddBook,
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Add Book'),
+                ),
+              ),
             ],
           ),
         ),
