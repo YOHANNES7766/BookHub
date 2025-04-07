@@ -6,10 +6,10 @@ class AddTransactionScreen extends StatefulWidget {
   const AddTransactionScreen({super.key});
 
   @override
-  _AddTransactionScreenState createState() => _AddTransactionScreenState();
+  AddTransactionScreenState createState() => AddTransactionScreenState();
 }
 
-class _AddTransactionScreenState extends State<AddTransactionScreen> {
+class AddTransactionScreenState extends State<AddTransactionScreen> {
   final _userIdController = TextEditingController();
   final _bookIdController = TextEditingController();
   final _amountController = TextEditingController();
@@ -90,6 +90,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                                       return;
                                     }
 
+                                    final navigator = Navigator.of(context);
+                                    final messenger =
+                                        ScaffoldMessenger.of(context);
+
                                     try {
                                       await transactionProvider.addTransaction(
                                         userId: userId,
@@ -99,10 +103,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                                         amount: amount,
                                         status: _selectedStatus!,
                                       );
-                                      Navigator.pop(context);
+
+                                      if (!mounted) return;
+                                      navigator.pop();
                                     } catch (e) {
-                                      _showErrorSnackbar(context,
-                                          'Failed to add transaction: $e');
+                                      if (!mounted) return;
+                                      messenger.showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                              'Failed to add transaction: $e'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
                                     }
                                   }
                                 },
@@ -126,7 +138,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
   }
 
-  // Helper method to build text fields with rounded corners and padding
+  // Helper method to build text fields
   Widget _buildTextField(
       TextEditingController controller, String label, TextInputType type) {
     return TextFormField(
@@ -143,7 +155,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
   }
 
-  // Helper method to build dropdowns with rounded corners and padding
+  // Helper method to build dropdowns
   Widget _buildDropdown({
     required String label,
     required String? value,
@@ -165,7 +177,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
   }
 
-  // Show error snackbar when the transaction fails
+  // Show error snackbar
   void _showErrorSnackbar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.red),
