@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/transaction_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:logger/logger.dart';
 
 class TransactionProvider with ChangeNotifier {
   List<Transaction> _transactions = [];
@@ -13,6 +14,9 @@ class TransactionProvider with ChangeNotifier {
   String? _errorMessage;
   static const int _maxRetries = 3;
   static const Duration _timeout = Duration(seconds: 30);
+
+  // Initialize the logger
+  final logger = Logger();
 
   // Valid transaction types with their variations
   static const Map<String, List<String>> validTransactionTypes = {
@@ -93,11 +97,11 @@ class TransactionProvider with ChangeNotifier {
     required String status,
     required double amount,
   }) {
-    print('Validating transaction data:');
-    print('Book ID: $bookId');
-    print('Transaction Type: $transactionType');
-    print('Status: $status');
-    print('Amount: $amount');
+    logger.i('Validating transaction data:');
+    logger.i('Book ID: $bookId');
+    logger.i('Transaction Type: $transactionType');
+    logger.i('Status: $status');
+    logger.i('Amount: $amount');
 
     if (bookId <= 0) {
       throw Exception('Invalid book ID. Please select a valid book.');
@@ -106,7 +110,7 @@ class TransactionProvider with ChangeNotifier {
     // Normalize and validate transaction type
     final normalizedTransactionType =
         _normalizeTransactionType(transactionType);
-    print('Normalized transaction type: $normalizedTransactionType');
+    logger.i('Normalized transaction type: $normalizedTransactionType');
 
     final normalizedStatus = status.toLowerCase().trim();
     if (!validStatuses.contains(normalizedStatus)) {
@@ -145,7 +149,7 @@ class TransactionProvider with ChangeNotifier {
       }
     } catch (e) {
       _errorMessage = 'Error fetching transactions: $e';
-      print(_errorMessage);
+      logger.e(_errorMessage);
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -165,12 +169,12 @@ class TransactionProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      print('Adding transaction with data:');
-      print('User ID: $userId');
-      print('Book ID: $bookId');
-      print('Transaction Type: $transactionType');
-      print('Amount: $amount');
-      print('Status: $status');
+      logger.i('Adding transaction with data:');
+      logger.i('User ID: $userId');
+      logger.i('Book ID: $bookId');
+      logger.i('Transaction Type: $transactionType');
+      logger.i('Amount: $amount');
+      logger.i('Status: $status');
 
       // Validate data before making the request
       _validateTransactionData(
@@ -195,7 +199,7 @@ class TransactionProvider with ChangeNotifier {
         'status': normalizedStatus,
       });
 
-      print('Request body: $body');
+      logger.i('Request body: $body');
 
       final response = await _handleRequest(
         operation: 'Add transaction',
@@ -206,8 +210,8 @@ class TransactionProvider with ChangeNotifier {
         ),
       );
 
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
+      logger.i('Response status: ${response.statusCode}');
+      logger.i('Response body: ${response.body}');
 
       if (response.statusCode == 201) {
         final newTransaction = Transaction.fromJson(json.decode(response.body));
@@ -217,7 +221,7 @@ class TransactionProvider with ChangeNotifier {
       }
     } catch (e) {
       _errorMessage = 'Error adding transaction: $e';
-      print(_errorMessage);
+      logger.e(_errorMessage);
       rethrow;
     } finally {
       _isAdding = false;
@@ -250,7 +254,7 @@ class TransactionProvider with ChangeNotifier {
       }
     } catch (e) {
       _errorMessage = 'Error deleting transaction: $e';
-      print(_errorMessage);
+      logger.e(_errorMessage);
       rethrow;
     } finally {
       _isDeleting = false;
@@ -312,7 +316,7 @@ class TransactionProvider with ChangeNotifier {
       }
     } catch (e) {
       _errorMessage = 'Error updating transaction: $e';
-      print(_errorMessage);
+      logger.e(_errorMessage);
       rethrow;
     } finally {
       _isUpdating = false;
