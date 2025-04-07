@@ -6,10 +6,10 @@ class TransactionListScreen extends StatefulWidget {
   const TransactionListScreen({super.key});
 
   @override
-  _TransactionListScreenState createState() => _TransactionListScreenState();
+  TransactionListScreenState createState() => TransactionListScreenState();
 }
 
-class _TransactionListScreenState extends State<TransactionListScreen> {
+class TransactionListScreenState extends State<TransactionListScreen> {
   @override
   void initState() {
     super.initState();
@@ -84,7 +84,6 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     );
   }
 
-  // Build the UI for an empty list of transactions
   Widget _buildEmptyState() {
     return const Center(
       child: Text(
@@ -94,7 +93,6 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     );
   }
 
-  // Build the card for each transaction
   Widget _buildTransactionCard(BuildContext context, transaction) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -121,7 +119,6 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     );
   }
 
-  // Show confirmation dialog before deleting a transaction
   void _confirmDelete(BuildContext context, int transactionId) {
     showDialog(
       context: context,
@@ -137,17 +134,23 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
           TextButton(
             onPressed: () async {
               Navigator.of(ctx).pop();
+              final messenger = ScaffoldMessenger.of(context);
               try {
                 await Provider.of<TransactionProvider>(context, listen: false)
                     .deleteTransaction(transactionId);
-                ScaffoldMessenger.of(context).showSnackBar(
+
+                if (!mounted) return;
+
+                messenger.showSnackBar(
                   const SnackBar(
                     content: Text('Transaction deleted successfully'),
                     duration: Duration(seconds: 2),
                   ),
                 );
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                if (!mounted) return;
+
+                messenger.showSnackBar(
                   SnackBar(
                     content: Text('Error deleting transaction: $e'),
                   ),
