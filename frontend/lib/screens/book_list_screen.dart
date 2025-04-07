@@ -3,17 +3,17 @@ import 'package:provider/provider.dart';
 import '../providers/book_provider.dart';
 import 'add_book_screen.dart';
 import 'category_screen.dart';
-import 'recommendation_screen.dart'; // ✅ Import RecommendationScreen
-import 'transaction_list_screen.dart'; // ✅ Import TransactionScreen
+import 'recommendation_screen.dart';
+import 'transaction_list_screen.dart';
 
 class BookListScreen extends StatefulWidget {
   const BookListScreen({super.key});
 
   @override
-  _BookListScreenState createState() => _BookListScreenState();
+  BookListScreenState createState() => BookListScreenState();
 }
 
-class _BookListScreenState extends State<BookListScreen> {
+class BookListScreenState extends State<BookListScreen> {
   @override
   void initState() {
     super.initState();
@@ -40,8 +40,7 @@ class _BookListScreenState extends State<BookListScreen> {
             },
           ),
           IconButton(
-            icon:
-                const Icon(Icons.recommend), // ✅ New Button for Recommendations
+            icon: const Icon(Icons.recommend),
             onPressed: () {
               Navigator.push(
                 context,
@@ -51,13 +50,12 @@ class _BookListScreenState extends State<BookListScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.payment), // Icon for Transaction
+            icon: const Icon(Icons.payment),
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) =>
-                        TransactionListScreen()), // Navigate to Transaction Screen
+                    builder: (context) => TransactionListScreen()),
               );
             },
           ),
@@ -114,8 +112,9 @@ class _BookListScreenState extends State<BookListScreen> {
         icon: const Icon(Icons.delete),
         onPressed: () async {
           final shouldDelete = await _confirmDelete(context);
-          if (shouldDelete) {
+          if (shouldDelete && mounted) {
             await bookProvider.deleteBook(book.id);
+            if (!mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Book deleted')),
             );
