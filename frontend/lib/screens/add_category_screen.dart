@@ -6,10 +6,10 @@ class AddCategoryScreen extends StatefulWidget {
   const AddCategoryScreen({super.key});
 
   @override
-  _AddCategoryScreenState createState() => _AddCategoryScreenState();
+  AddCategoryScreenState createState() => AddCategoryScreenState();
 }
 
-class _AddCategoryScreenState extends State<AddCategoryScreen> {
+class AddCategoryScreenState extends State<AddCategoryScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   bool isLoading = false;
@@ -58,8 +58,11 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
                       final name = _nameController.text;
                       final description = _descriptionController.text;
 
+                      final scaffoldMessenger = ScaffoldMessenger.of(context);
+                      final navigator = Navigator.of(context);
+
                       if (name.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        scaffoldMessenger.showSnackBar(
                           const SnackBar(
                               content: Text('Category name required')),
                         );
@@ -71,18 +74,20 @@ class _AddCategoryScreenState extends State<AddCategoryScreen> {
                       try {
                         await categoryProvider.addCategory(name, description);
 
+                        if (!mounted) return;
                         setState(() => isLoading = false);
 
-                        Navigator.pop(
-                            context); // Go back after successful addition
+                        navigator.pop(); // Go back after successful addition
 
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        scaffoldMessenger.showSnackBar(
                           const SnackBar(
                               content: Text('Category added successfully!')),
                         );
                       } catch (error) {
+                        if (!mounted) return;
+
                         setState(() => isLoading = false);
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        scaffoldMessenger.showSnackBar(
                           SnackBar(content: Text('Error: $error')),
                         );
                       }
