@@ -28,17 +28,27 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Load token from SharedPreferences
+  String? get firstValidationError {
+    if (_validationErrors != null && _validationErrors!.isNotEmpty) {
+      return _validationErrors!.values.first.first;
+    }
+    return null;
+  }
+
   Future<void> _loadToken() async {
     _isLoading = true;
     _clearErrors();
     notifyListeners();
 
     try {
-      final userData = await _authService.getUser();
-      if (userData != null) {
-        _token = userData['token'];
-        if (userData['email_verified_at'] != null) {
+      final prefs = await SharedPreferences.getInstance();
+      final savedToken = prefs.getString('auth_token');
+
+      if (savedToken != null) {
+        _token = savedToken;
+
+        final userData = await _authService.getUser();
+        if (userData != null && userData['email_verified_at'] != null) {
           _emailVerifiedAt = DateTime.parse(userData['email_verified_at']);
         }
       } else {
@@ -46,6 +56,7 @@ class AuthProvider with ChangeNotifier {
         _emailVerifiedAt = null;
       }
     } catch (e) {
+      debugPrint('Load token error: $e');
       _token = null;
       _emailVerifiedAt = null;
       _error = 'Failed to load authentication state';
@@ -55,16 +66,14 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // Save token to SharedPreferences
   Future<void> _saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('auth_token', token);
   }
 
-  // Remove token from SharedPreferences (for logout)
   Future<void> _removeToken() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auth_token');
+    await prefs.remove('auth_token'); // Or prefs.clear() if you store more
   }
 
   Future<bool> login(String email, String password) async {
@@ -82,12 +91,13 @@ class AuthProvider with ChangeNotifier {
         }
         _token = data['token'];
         await _saveToken(data['token']);
-        notifyListeners();
+        await refreshUserData();
         return true;
       }
       _error = 'Invalid credentials';
       return false;
     } catch (e) {
+      debugPrint('Login error: $e');
       _error = 'Failed to login';
       return false;
     } finally {
@@ -109,14 +119,13 @@ class AuthProvider with ChangeNotifier {
           _error = data['message'];
           return false;
         }
-        // Send verification email after successful registration
         await sendVerificationEmail();
-        notifyListeners();
         return true;
       }
       _error = 'Registration failed';
       return false;
     } catch (e) {
+      debugPrint('Register error: $e');
       _error = 'Failed to register';
       return false;
     } finally {
@@ -134,13 +143,14 @@ class AuthProvider with ChangeNotifier {
       final success = await _authService.logout();
       if (success) {
         _token = null;
+        _emailVerifiedAt = null;
         await _removeToken();
-        notifyListeners();
         return true;
       }
       _error = 'Failed to logout';
       return false;
     } catch (e) {
+      debugPrint('Logout error: $e');
       _error = 'Failed to logout';
       return false;
     } finally {
@@ -161,6 +171,7 @@ class AuthProvider with ChangeNotifier {
       }
       return false;
     } catch (e) {
+      debugPrint('Refresh token error: $e');
       return false;
     }
   }
@@ -178,6 +189,7 @@ class AuthProvider with ChangeNotifier {
       _error = 'Failed to send verification email';
       return false;
     } catch (e) {
+      debugPrint('Send verification email error: $e');
       _error = 'Failed to send verification email';
       return false;
     } finally {
@@ -194,18 +206,42 @@ class AuthProvider with ChangeNotifier {
     try {
       final result = await _authService.verifyEmail(token);
       if (result != null && result['status'] == 'success') {
-        // Refresh user data to get updated email verification status
-        await _loadToken();
+        await updateEmailVerificationStatus();
         return true;
       }
       _error = 'Failed to verify email';
       return false;
     } catch (e) {
+      debugPrint('Email verification error: $e');
       _error = 'Failed to verify email';
       return false;
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> refreshUserData() async {
+    try {
+      final userData = await _authService.getUser();
+      if (userData != null && userData['email_verified_at'] != null) {
+        _emailVerifiedAt = DateTime.parse(userData['email_verified_at']);
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Refresh user data error: $e');
+    }
+  }
+
+  Future<void> updateEmailVerificationStatus() async {
+    try {
+      final userData = await _authService.getUser();
+      if (userData != null && userData['email_verified_at'] != null) {
+        _emailVerifiedAt = DateTime.parse(userData['email_verified_at']);
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Update email verification status error: $e');
     }
   }
 
